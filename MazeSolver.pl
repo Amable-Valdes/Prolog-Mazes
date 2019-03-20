@@ -38,7 +38,7 @@ update(  p(X,Y), right, p(X, Y_new)  ) :-
 /***************************************************************************/
 
 legal(  p(X,Y) ) :-
-	X >= 0,
+    X >= 0,
     Y >= 0,
     \+ c(X,Y,wall).
 
@@ -73,16 +73,25 @@ solve_dfs(Problem, State, History, [Move|Moves]) :-
 :- dynamic final_state/2.
 :- dynamic c/3.
 
-solve_problem(File_name, Problem, Solution) :-
+solve_problem(File_name, Problem, Solution, Time) :-
     write('Nota: el fichero debe estar en la ruta '),
     working_directory(CWD, CWD),
     write(CWD),
+    nl,
    %working_directory(_,'C:\Users\Sergio\Documents\Prolog-Mazes').
 
     load_facts(File_name),
-
+    statistics(runtime, Init_time),
     initial_state(Problem, Initial),
-    solve_dfs(Problem, Initial, [Initial], Solution).
+    solve_dfs(Problem, Initial, [Initial], Solution),
+
+    statistics(runtime, End_time),
+    Time is End_time-Init_time,
+	
+    retractall( c(_,_,_) ),
+    retractall( initial_state(_,_) ),
+    retractall( final_state(_,_) ).
+	
 
 load_facts(File_name) :-
     open(File_name, read, Stream),
