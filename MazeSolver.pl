@@ -1,8 +1,43 @@
+/***************************************************************************/
+/* Representation of the state                                             */
+/***************************************************************************/
+/*
+ * The states are represented as follows:
+ * p(X,Y).
+ * where X and Y represents the cartesian coordinates of the location
+ * point of the maze
+ */ 
+
+/* We declare dynamic predicates as we are going to assert them 
+ * reading a file. [See read_facts/3]
+ * 
+ * The predicate initial_state(X,Y) represents the starting point
+ * of the maze.
+ * Equivalent for final state
+ * 
+ * c(X,Y,Content) is a predicate that given a position gives you
+ * whether we can go through the cell or not.
+ * 
+ * Following the closed-world assumption, we only declare the
+ * ones that cannot be gone through (walls).
+ * 
+ * We have two approaches for implementing this predicate: 
+ *  - as a rule
+ *  - as a sequence of facts
+ * We decided to use the 2nd one in almost all the maze examples. 
+ * [An example implementation of the rule appoach can be seen in "MazeSolver_Maze1.pl" file]
+ */ 
+:- dynamic initial_state/2.
+:- dynamic final_state/2.
+:- dynamic c/3.
 
 /***************************************************************************/
 /* Now we implement our table of moves.                                    */
 /***************************************************************************/
-
+/*
+ * We can move upwards, downwards, to the left and to the right
+ * Each movement is considered from an static approach.
+ */ 
 move(  p( _, _ ), up    ).
 move(  p( _, _ ), down  ).
 move(  p( _, _ ), left  ).
@@ -13,6 +48,17 @@ move(  p( _, _ ), right ).
 /***************************************************************************/
 /* We now implement the state update functionality.                        */
 /***************************************************************************/
+/*
+
+ X\Y    0          1          2   
+    ╔═════════╦═════════╦═════════╗
+ 0  ║    -    ║ (X-1,Y) ║    -    ║
+    ╠═════════╬═════════╬═════════╣
+ 1  ║ (X,Y-1) ║  (X,Y)  ║ (X,Y+1) ║
+    ╠═════════╬═════════╬═════════╣
+ 2  ║    -    ║ (X+1,Y) ║    -    ║
+    ╚═════════╩═════════╩═════════╝
+ */ 
 
 % UP
 update(  p(X, Y), up, p(X_new, Y)  ) :-
@@ -36,28 +82,28 @@ update(  p(X,Y), right, p(X, Y_new)  ) :-
 /* Implementation of the predicate that checks whether a state is legal    */
 /* according to the constraints imposed by the problem's statement.        */
 /***************************************************************************/
-
+/*
+ * The location cannot be out of the maze, so we define lower limits for both 
+ * coordinates 
+ * 
+ * Also we have to check whether the (X,Y) coordinates represents a
+ * wall or an empty space. We only can do the move if the cell is empty.
+ * As we just assert the wall cells, we use the negation as failure.
+ */
 legal(  p(X,Y) ) :-
     X >= 0,
     Y >= 0,
     \+ c(X,Y,wall).
 
+
+
 /************************************************************************************/
 /* A reusable depth-first problem solving framework.                                */
 /************************************************************************************/
 
-/* The problem is solved is the current state is the final state.                   */
 solve_dfs(Problem, State, _, []) :-
 	final_state(Problem, State).
-/* To perform a state transition we follow the steps below:                         */
-/* - We choose a move that can be applied from our current state.                   */
-/* - We create the new state which results from performing the chosen move.         */
-/* - We check whether the new state is legal (i.e. meets the imposed constraints.   */
-/* - Next we check whether the newly produced state was previously visited. If so   */
-/*   then we discard such a move, since we're most probably in a loop!              */
-/* - If all the above conditions are fulfilled, then we consolidate the chosen move */
-/*   and then we continue searching for the solution. Note that we have stored the  */
-/*   newly created state for loop checking!                                         */
+
 solve_dfs(Problem, State, History, [Move|Moves]) :-
 	move(State, Move),
 	update(State, Move, NewState),
@@ -69,39 +115,53 @@ solve_dfs(Problem, State, History, [Move|Moves]) :-
 /*************************************************************************************/
 /* Solving the problem.                                                              */
 /*************************************************************************************/
-:- dynamic initial_state/2.
-:- dynamic final_state/2.
-:- dynamic c/3.
 
+/*
+ * MAIN RULE. USED AS QUERY.
+ * 
+ * EXAMPLE OF USAGE: solve_problem('maze5.pl', Problem, Solution, _).
+ * (The name of the problem is infered, the solution is given as output
+ * and the time is not shown).
+ */ 
 solve_problem(File_name, Problem, Solution, Time) :-
-    write('Nota: el fichero debe estar en la ruta '),
+    write('Note: the file must be located in the path '),
+
+    /*
+     * this is where Prolog is working as default.
+     * Can be changed using "working_directory(_, New_CWD)"
+     */ 
     working_directory(CWD, CWD),
+
     write(CWD),
-    nl,
-   %working_directory(_,'C:\Users\Sergio\Documents\Prolog-Mazes').
+    nl, % new line
 
-    load_facts(File_name),
-    statistics(runtime, Init_time),
-    initial_state(Problem, Initial),
+    load_facts(File_name), % load the File_name instance of the problem
+    initial_state(Problem, Initial), 
+    
+    statistics(runtime, Init_time), % measuring of the time [See results in...]
     solve_dfs(Problem, Initial, [Initial], Solution),
-
     statistics(runtime, End_time),
-    Time is End_time-Init_time,
+
+    Time is End_time-Init_time, % measuring of the time [See results in...]
 	
+    /*
+     * The following predicates are used to reset the buffer 
+     */ 
     retractall( c(_,_,_) ),
     retractall( initial_state(_,_) ),
     retractall( final_state(_,_) ).
-	
+
+% END OF solve_problem RULE
 
 load_facts(File_name) :-
-    open(File_name, read, Stream),
-    read_facts(Stream, _, _),
+    open(File_name, read, Stream), % open the File given as input (must include the extension)
+    read_facts(Stream, _, _), % read AND ASSERT the facts
     close(Stream).
 
 read_facts(_, [], R) :-
 	R == end_of_file,
-	!.
+	!. % Green Cut at the end of the file
 read_facts(Stream, [T|X], _) :-
 	read(Stream, T),
-	assert(T),
+	assert(T), % only the dynamic predicates can be asserted (kind of format checking)
 	read_facts(Stream,X,T).
