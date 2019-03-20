@@ -1,46 +1,5 @@
 
 /***************************************************************************/
-/* Representation of the state                                             */
-/***************************************************************************/
-/* p(AndroidCell, BoxCell, GoalCell)                                       */
-/***************************************************************************/
-/* Representation of the moves                                             */
-/***************************************************************************/
-/* m(MissionariesInBoat, CannibalsInBoat)                                  */
-/***************************************************************************/
-
-initial_state(  maze, p(0,0)  ). 
-
-final_state(  maze, p(3,3)  ).
-
-
-/*c(0,3,wall).
-
-c(1,0,wall).
-c(1,1,wall).
-c(1,3,wall).
-c(2,3,wall).
-c(3,1,wall).
-*/
-c(X, Y, wall) :-
-    X = 0, Y = 3
-    ;   
-    X = 1, Y = 0
-    ;   
-    X = 1, Y = 1
-    ;   
-    X = 1, Y = 3
-    ;   
-    X = 2, Y = 3
-    ;   
-    X = 3, Y = 1
-    ;   
-    X > 3; Y > 3.   
-    
-	
-
-
-/***************************************************************************/
 /* Now we implement our table of moves.                                    */
 /***************************************************************************/
 
@@ -48,8 +7,8 @@ move(  p( _, _ ), up    ).
 move(  p( _, _ ), down  ).
 move(  p( _, _ ), left  ).
 move(  p( _, _ ), right ).
-	
-	
+
+
 
 /***************************************************************************/
 /* We now implement the state update functionality.                        */
@@ -104,13 +63,36 @@ solve_dfs(Problem, State, History, [Move|Moves]) :-
 	update(State, Move, NewState),
 	legal(NewState),
 	\+ member(NewState, History),
-    print(NewState),
+	%print(NewState),
 	solve_dfs(Problem, NewState, [NewState|History], Moves).
 
 /*************************************************************************************/
 /* Solving the problem.                                                              */
 /*************************************************************************************/
-solve_problem(Problem, Solution) :-    
-	initial_state(Problem, Initial),
-	solve_dfs(Problem, Initial, [Initial], Solution).
-	
+:- dynamic initial_state/2.
+:- dynamic final_state/2.
+:- dynamic c/3.
+
+solve_problem(File_name, Problem, Solution) :-
+    write('Nota: el fichero debe estar en la ruta '),
+    working_directory(CWD, CWD),
+    write(CWD),
+   %working_directory(_,'C:\Users\Sergio\Documents\Prolog-Mazes').
+
+    load_facts(File_name),
+
+    initial_state(Problem, Initial),
+    solve_dfs(Problem, Initial, [Initial], Solution).
+
+load_facts(File_name) :-
+    open(File_name, read, Stream),
+    read_facts(Stream, _, _),
+    close(Stream).
+
+read_facts(_, [], R) :-
+	R == end_of_file,
+	!.
+read_facts(Stream, [T|X], _) :-
+	read(Stream, T),
+	assert(T),
+	read_facts(Stream,X,T).
