@@ -27,7 +27,8 @@
 /*  - as a sequence of facts                                            */
 /* We decided to use the 2nd one in almost all the maze examples.       */
 /* [An example implementation of the rule appoach can be seen in        */
-/*  "MazeSolver_Maze0_with_facts.pl" file]                              */
+/*  "MazeSolver_Maze0_with_rule.pl" file located in                     */
+/*  "embedded facts or rules examples" directory]                       */
 /*                                                                      */
 :- dynamic initial_state/2.
 :- dynamic final_state/2.
@@ -50,8 +51,8 @@ move(  p( _, _ ), right ).
 /***************************************************************************/
 /* We now implement the state update functionality.                        */
 /***************************************************************************/
-/*                                               */
-/*                                               */
+/*                                                   */
+/*                                                   */
 /*      X\Y     0         1         2		     */
 /*         ╔═════════╦═════════╦═════════╗	     */
 /*      0  ║    -    ║ (X-1,Y) ║    -    ║	     */
@@ -60,7 +61,7 @@ move(  p( _, _ ), right ).
 /*         ╠═════════╬═════════╬═════════╣	     */
 /*      2  ║    -    ║ (X+1,Y) ║    -    ║	     */
 /*         ╚═════════╩═════════╩═════════╝	     */
-/*                                               */
+/*                                                   */
 
 % UP
 update(  p(X, Y), up, p(X_new, Y)  ) :-
@@ -137,24 +138,25 @@ solve_problem(File_name, Problem, Solution, Time) :-
     write(CWD),
     nl, % new line
 
-    load_facts(File_name), % load the File_name instance of the problem
-    initial_state(Problem, Initial),
-
-    %statistics(runtime, Init_time), % measuring of the time [See results in...]
-    solve_dfs(Problem, Initial, [Initial], Solution),
-    %statistics(runtime, End_time),
-
-    %Time is End_time-Init_time, % measuring of the time [See results in...]
-
     /* The following predicates are used to reset the buffer */
     /* IMPORTANT:                                            */
     /* Comment these 3 lines in order to get more than one   */
-	/* solution of the maze. But take into account that      */
+    /* solution of the maze. But take into account that      */
     /* doing that you cannot solve another instance of the   */
-	/* maze	unless executeing them manually in the ?- prompt */
+    /* maze unless executeing them manually in the ?- prompt */
     retractall( c(_,_,_) ),
     retractall( initial_state(_,_) ),
-    retractall( final_state(_,_) ).
+    retractall( final_state(_,_) ),
+
+    load_facts(File_name), % load the File_name instance of the problem
+    initial_state(Problem, Initial),
+
+    statistics(runtime, Init_time), % measuring of the time [See results in...]
+    solve_dfs(Problem, Initial, [Initial], Solution),
+    statistics(runtime, End_time),
+
+    Time is End_time-Init_time. % measuring of the time [See results in...]
+
 
 % END OF solve_problem RULE
 
