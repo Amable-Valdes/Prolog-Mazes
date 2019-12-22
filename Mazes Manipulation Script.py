@@ -68,6 +68,8 @@ def translate(vectorRGB):
     if(vectorRGB[0] == 0 and vectorRGB[1] == 0 and vectorRGB[2] == 0):
         # If black, wall
         return WALL
+    # If is different from above (an strange value), wall
+    return WALL
 
 def initial_state(maze):
     """
